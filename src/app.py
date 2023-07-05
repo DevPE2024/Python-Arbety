@@ -1,38 +1,29 @@
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
 
-def run(playwright):
-    browser = playwright.chromium.launch()
-    page = browser.new_page()
+# Configura as opções do Chrome
+options = Options()
+options.add_argument("--headless")  # Executa o Chrome em modo headless
 
-    # Navegue para o site
-    page.goto('https://www.arbety.com/games/double')
+# Configura o serviço do ChromeDriver
+service = Service(ChromeDriverManager().install())
 
-    while True:
-        # Localize o elemento pelo XPath completo
-        element_handle = page.wait_for_selector('//*[@id="root"]/div[7]/div/div[2]/main/div[1]/div/div[1]/div/div[2]/div/div[2]/div/div')
+# Cria uma nova instância do Google Chrome
+driver = webdriver.Chrome(service=service, options=options)
 
-        # Extraia o texto do elemento
-        element_text = page.evaluate('(element) => element.textContent', element_handle)
+driver.implicitly_wait(10)  # espera até 10 segundos antes de lançar uma NoSuchElementException
 
-        # Divida o texto em partes usando a função split()
-        parts = element_text.split('">')
+driver.get("https://www.arbety.com/games/double")  # substitua pelo URL correto
 
-        # Obtenha os valores desejados das partes extraídas
-        hora = parts[1]
-        numero = parts[2]
-        cor = parts[3].split('"')[0]
-        data = parts[3].split('aria-label="')[1].split(',')[0]
+elemento_pai = driver.find_element(By.XPATH, "//div[contains(@class, 'items')]")
 
-        # Imprima os valores extraídos
-        print("Hora:", hora)
-        print("Número:", numero)
-        print("Cor:", cor)
-        print("Data:", data)
+# Encontrar todos os elementos filhos DIRETOS do elemento pai
+elementos_filhos = elemento_pai.find_elements(By.XPATH, "./*")
 
-        # Aguarde 5 segundos antes de procurar novamente
-        page.wait_for_timeout(5000)
+for elemento in elementos_filhos:
+    print(f"Tag: {elemento.tag_name}, Conteúdo: {elemento.text}")
 
-    browser.close()
-
-with sync_playwright() as p:
-    run(p)
+driver.quit()
