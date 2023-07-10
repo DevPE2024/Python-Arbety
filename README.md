@@ -1,34 +1,39 @@
-# Python-Arbety
- um processo de aprende e de entende o mercado de aposta 
+# Web Scraper para o Jogo Double da Arbety
 
- GitHub Copilot: Sim, é possível criar um arquivo README.md com as informações já presentes no código. O arquivo README.md é um arquivo de texto que contém informações sobre o projeto, como instruções de instalação, uso e contribuição.
+Este é um script em Python que utiliza Selenium e BeautifulSoup para fazer web scraping da página do jogo Double no site Arbety. Ele foi criado para rastrear atualizações de elementos na página, atualizando a cada 30 segundos.
 
-Para criar um arquivo README.md, basta criar um arquivo com esse nome na raiz do projeto e adicionar as informações desejadas. No caso deste código, poderíamos adicionar informações como:
+## Tecnologias Usadas
 
-## Descrição
+- [Python](https://www.python.org/) - A linguagem de programação utilizada
+- [Selenium](https://www.selenium.dev/) - Utilizado para automatizar o navegador
+- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) - Utilizado para extrair dados do HTML
+- [WebDriver](https://www.selenium.dev/documentation/en/webdriver/) - Utilizado para comunicar com o navegador
 
-Este script utiliza a biblioteca Selenium para acessar o site https://www.arbety.com/games/double e extrair informações sobre os elementos presentes na página.
+## Como Usar
 
-## Instalação
+Para usar este script, siga as instruções abaixo:
 
-Para executar este script, é necessário ter o Python 3 e as bibliotecas Selenium e BeautifulSoup instaladas. Para instalar as bibliotecas, execute o seguinte comando:
-
-```
-pip install selenium beautifulsoup4
-```
-
-Também é necessário ter o ChromeDriver instalado e adicionado ao PATH do sistema. Para instalar o ChromeDriver, execute o seguinte comando:
-
-```
-pip install webdriver-manager
-```
-
-## Uso
-
-Para executar o script, basta executar o arquivo app.py. O script irá acessar o site https://www.arbety.com/games/double e extrair informações sobre os elementos presentes na página. As informações serão exibidas no console.
+1. Certifique-se de ter Python 3.9 ou superior instalado.
+2. Clone este repositório ou baixe o arquivo Python.
+3. Instale as dependências necessárias com o seguinte comando:
+    ```
+    pip install selenium beautifulsoup4 webdriver_manager
+    ```
+4. Execute o script com o seguinte comando:
+    ```
+    python seu_arquivo.py
+    ```
+5. O script vai começar a monitorar a página do jogo, atualizando a cada 30 segundos e extraindo os dados necessários.
 
 ## Contribuição
 
-Contribuições são bem-vindas! Para contribuir, basta criar um fork deste repositório, fazer as alterações desejadas e enviar um pull request.
+Contribuições são sempre bem-vindas! Sinta-se à vontade para abrir uma issue ou fazer um pull request.
 
+## Licença
+
+Este projeto está licenciado sob a licença MIT.
+
+## Aviso
+
+Este script foi criado apenas para fins educacionais. Não me responsabilizo por qualquer uso indevido deste código.
 
