@@ -67,4 +67,5 @@ try:
 
 except KeyboardInterrupt:
     print("Programa interrompido pelo usuário")
+    print("Fechando o navegador...")
     driver.quit()
