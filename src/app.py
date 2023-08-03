@@ -1,3 +1,4 @@
+import os
 import time
 from bs4 import BeautifulSoup
 from selenium.webdriver import Edge
@@ -7,12 +8,16 @@ from selenium.webdriver.edge.service import Service
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
+from collections import deque
+from strat import Strat
 
+# Cria uma instância da classe Strat
+strategia = Strat()
 
 # Configura as opções do Edge
 options = Options()
-options.add_argument("--headless")  # Executa o Edge em modo headless
+options.add_argument("--headless")
 
 # Configura o serviço do EdgeDriver
 service = Service(EdgeChromiumDriverManager().install())
@@ -20,9 +25,7 @@ service = Service(EdgeChromiumDriverManager().install())
 # Cria uma nova instância do Microsoft Edge
 driver = Edge(service=service, options=options)
 
-driver.implicitly_wait(
-    10
-)  # espera até 10 segundos antes de lançar uma NoSuchElementException
+driver.implicitly_wait(10)
 
 url = "https://www.arbety.com/games/double"
 driver.get(url)
@@ -30,23 +33,33 @@ driver.get(url)
 # Armazena o código HTML atual da página
 html_antigo = driver.page_source
 
-# Armazena as linhas de dados já impressas
-dados_impressos = set()
+# Definir o tamanho máximo da fila
+TAMANHO_MAXIMO = 20
+
+# Criar uma fila com tamanho máximo
+fila_dados_impressos = deque(maxlen=TAMANHO_MAXIMO)
 
 try:
     while True:
         try:
             # Verifica se os elementos estão presentes na página
             elemento_pai = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//div[contains(@class, 'items')]")
-                )
+                EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'items')]"))
             )
 
             # Executa o código para pegar os elementos filhos
             elementos_filhos = elemento_pai.find_elements(By.XPATH, "./*")
+
+            # Lista para armazenar os dados atuais na página
+            dados_atuais = []
+
             for elemento in elementos_filhos:
-                soup = BeautifulSoup(elemento.get_attribute("innerHTML"), "html.parser")
+                try:
+                    soup = BeautifulSoup(elemento.get_attribute("innerHTML"), "html.parser")
+                except StaleElementReferenceException:
+                    print("Elemento obsoleto encontrado. Continuando...")
+                    continue
+
                 div = soup.find("div")
                 if div:
                     cor = div.get("class")[1] if len(div.get("class")) > 1 else None
@@ -56,15 +69,14 @@ try:
                         data, hora = aria_label.split(", ")
                     else:
                         data, hora = None, None
-
-                    # Monta a linha de dados
                     linha_dados = f"Cor: {cor}, Data: {data}, Hora: {hora}, Número: {numero}"
+                    dados_atuais.append(linha_dados)
 
-                    # Verifica se a linha de dados já foi impressa
-                    if linha_dados not in dados_impressos:
-                        # Se não, imprime a linha de dados, e a adiciona ao conjunto de dados impressos
-                        print(linha_dados)
-                        dados_impressos.add(linha_dados)
+            # Adiciona os novos dados à fila
+            fila_dados_impressos.extend(dados_atuais[-TAMANHO_MAXIMO:])
+
+            # Chama o método processar_cores para processar as cores e tomar decisões de apostas
+            strategia.processar_cores(fila_dados_impressos)
 
             # Armazena o código HTML atual da página
             html_atual = driver.page_source
@@ -74,7 +86,7 @@ try:
                 html_antigo = html_atual
                 driver.refresh()
 
-            # Espera por 30 segundos antes de verificar novamente
+            # Espera por 15 segundos antes de verificar novamente
             time.sleep(15)
 
         except NoSuchElementException as e:
