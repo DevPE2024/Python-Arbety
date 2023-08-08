@@ -6,7 +6,30 @@ class Strat:
         self.valor_aposta = 50
         self.gale_nivel = 0
         self.lista_atualizada = False
+        self.valor_aposta_usuario = 0  # Valor da aposta definido pelo usuário
+        self.robo_ligado = False  # Status do robô
 
+    def definir_valor_aposta_usuario(self, valor):
+        self.valor_aposta_usuario = valor
+
+    def ligar_robo(self):
+        self.robo_ligado = True
+
+    def desligar_robo(self):
+        self.robo_ligado = False
+
+    def processar_cores(self, fila_dados_impressos):
+        # Verificar as condições
+        if not self.robo_ligado:
+            print("Robô desligado. Ligue o robô para iniciar as apostas.")
+            return
+        if self.valor_aposta <= 0:
+            print("Saldo insuficiente. Adicione saldo para iniciar as apostas.")
+            return
+        if self.valor_aposta_usuario <= 0:
+            print("Defina o valor da aposta para iniciar as apostas.")
+            return
+        
     def acerto(self, cores):
         padroes = {
             ('red', 'green', 'red'): 'green',
@@ -115,3 +138,5 @@ class Strat:
         self.analisar_cores()
         print("Cores atuais:", list(self.lista_cores))
         print("Saldo:", self.valor_aposta)
+
+    
