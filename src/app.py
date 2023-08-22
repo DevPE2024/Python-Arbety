@@ -1,5 +1,7 @@
-import os
+import tkinter as tk
+import queue
 import time
+import threading
 from bs4 import BeautifulSoup
 from selenium.webdriver import Edge
 from selenium.webdriver.common.by import By
@@ -7,93 +9,119 @@ from selenium.webdriver.edge.options import Options
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
-from collections import deque
+
+# Importando a classe Strat aqui para evitar importação cíclica
 from strat import Strat
 
-# Cria uma instância da classe Strat
-strategia = Strat()
 
-# Configura as opções do Edge
-options = Options()
-options.add_argument("--headless")
+class App:
+    def __init__(self):
+        self.message_queue = queue.Queue()
+        self.strat_instance = Strat(self.message_queue)
+        self.face_instance = None
 
-# Configura o serviço do EdgeDriver
-service = Service(EdgeChromiumDriverManager().install())
+        # Configura as opções do Edge
+        options = Options()
+        options.add_argument("--headless")
 
-# Cria uma nova instância do Microsoft Edge
-driver = Edge(service=service, options=options)
+        # Configura o serviço do EdgeDriver
+        self.driver = Edge(options=options)
+        self.driver.implicitly_wait(10)
 
-driver.implicitly_wait(10)
+    def scrape_data(self):
+        url = "https://www.arbety.com/games/double"
+        self.driver.get(url)
 
-url = "https://www.arbety.com/games/double"
-driver.get(url)
+        # Armazena o código HTML atual da página
+        html_antigo = self.driver.page_source
 
-# Armazena o código HTML atual da página
-html_antigo = driver.page_source
+        while True:
+            try:
+                # Verifica se os elementos estão presentes na página
+                elemento_pai = WebDriverWait(self.driver, 15).until(
+                    EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'items')]"))
+                )
 
-# Definir o tamanho máximo da fila
-TAMANHO_MAXIMO = 20
+                # Executa o código para pegar os elementos filhos
+                elementos_filhos = elemento_pai.find_elements(By.XPATH, "./*")
 
-# Criar uma fila com tamanho máximo
-fila_dados_impressos = deque(maxlen=TAMANHO_MAXIMO)
+                # Lista para armazenar os dados atuais na página
+                dados_atuais = []
 
-try:
-    while True:
-        try:
-            # Verifica se os elementos estão presentes na página
-            elemento_pai = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'items')]"))
-            )
+                for elemento in elementos_filhos:
+                    try:
+                        soup = BeautifulSoup(elemento.get_attribute("innerHTML"), "html.parser")
+                    except StaleElementReferenceException:
+                        print("Elemento obsoleto encontrado. Continuando...")
+                        continue
 
-            # Executa o código para pegar os elementos filhos
-            elementos_filhos = elemento_pai.find_elements(By.XPATH, "./*")
+                    div = soup.find("div")
+                    if div:
+                        cor = div.get("class")[1] if len(div.get("class")) > 1 else None
+                        aria_label = div.get("aria-label")
+                        numero = div.text
+                        if aria_label:
+                            data, hora = aria_label.split(", ")
+                        else:
+                            data, hora = None, None
+                        linha_dados = f"Cor: {cor}, Data: {data}, Hora: {hora}, Número: {numero}"
+                        dados_atuais.append(linha_dados)
 
-            # Lista para armazenar os dados atuais na página
-            dados_atuais = []
+                # Processa os dados usando a Strat
+                self.strat_instance.processar_cores(dados_atuais)
 
-            for elemento in elementos_filhos:
-                try:
-                    soup = BeautifulSoup(elemento.get_attribute("innerHTML"), "html.parser")
-                except StaleElementReferenceException:
-                    print("Elemento obsoleto encontrado. Continuando...")
-                    continue
+                # Atualiza a interface gráfica
+                if self.face_instance:
+                    self.face_instance.update_labels()
 
-                div = soup.find("div")
-                if div:
-                    cor = div.get("class")[1] if len(div.get("class")) > 1 else None
-                    aria_label = div.get("aria-label")
-                    numero = div.text
-                    if aria_label:
-                        data, hora = aria_label.split(", ")
-                    else:
-                        data, hora = None, None
-                    linha_dados = f"Cor: {cor}, Data: {data}, Hora: {hora}, Número: {numero}"
-                    dados_atuais.append(linha_dados)
+                # Armazena o código HTML atual da página
+                html_atual = self.driver.page_source
 
-            # Adiciona os novos dados à fila
-            fila_dados_impressos.extend(dados_atuais[-TAMANHO_MAXIMO:])
+                # Verifica se houve mudanças na página
+                if html_atual != html_antigo:
+                    html_antigo = html_atual
+                    self.driver.refresh()
 
-            # Chama o método processar_cores para processar as cores e tomar decisões de apostas
-            strategia.processar_cores(fila_dados_impressos)
+                # Espera por 15 segundos antes de verificar novamente
+                time.sleep(15)
 
-            # Armazena o código HTML atual da página
-            html_atual = driver.page_source
+            except NoSuchElementException as e:
+                print(e)
+                self.driver.quit()
+                break
 
-            # Verifica se houve mudanças na página
-            if html_atual != html_antigo:
-                html_antigo = html_atual
-                driver.refresh()
+    def update_gui(self):
+        if self.face_instance:
+            self.face_instance.update_labels()
 
-            # Espera por 15 segundos antes de verificar novamente
-            time.sleep(15)
+    def run(self):
+        root = tk.Tk()
+        # Importando FaceGUI localmente para evitar importação cíclica
+        from face import FaceGUI
+        self.face_instance = FaceGUI(root, self.strat_instance)
+        
+        # Usando threading para a raspagem
+        scrape_thread = threading.Thread(target=self.scrape_data)
+        scrape_thread.start()
+        
+        root.mainloop()
+        scrape_thread.join()  # Aguarda até que o thread seja finalizado
 
-        except NoSuchElementException as e:
-            print(e)
-            driver.quit()
-            break
+        # Adicionando um método de atualização periódica
+        def periodic_update():
+            self.update_gui()
+            root.after(1000, periodic_update)
 
-except KeyboardInterrupt:
-    print("Programa interrompido pelo usuário")
-    driver.quit()
+        root.after(1000, periodic_update)
+        root.mainloop()
+
+        # Certificando-se de fechar o driver quando a GUI é fechada
+        self.driver.quit()
+
+        while not self.message_queue.empty():
+            print(self.message_queue.get())
+
+if __name__ == "__main__":
+    app = App()
+    app.run()
