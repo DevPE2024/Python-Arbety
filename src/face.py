@@ -2,7 +2,6 @@ import tkinter as tk
 from strat import Strat
 import queue
 
-
 class FaceGUI:
     def __init__(self, master, strategia):
         self.master = master
@@ -10,6 +9,7 @@ class FaceGUI:
         master.title("Robô Arbety")
         master.geometry("800x600")
         master.configure(bg="#163340")
+        self.continuous_update()
 
         # Texto extraído da imagem
         self.title_text = "DOUBLE ARBETY"
@@ -64,15 +64,19 @@ class FaceGUI:
             valor_aposta = float(self.bet_value_entry.get())
             if valor_aposta <= self.strategia.valor_aposta:
                 print("Robô Ligado")
-                self.update_balls()
             else:
                 print("Valor da aposta é maior do que a banca disponível!")
                 self.robot_status = False
                 self.robot_status_label.config(text="Robô Desligado")
+    
+    def continuous_update(self):
+        self.update_balls()
+        self.master.after(1000, self.continuous_update)  # Atualiza a cada segundo
+
+
 
     def update_balls(self):
         cores = self.strategia.get_last_colors()
-        print(f"Lista de cores em update_balls: {cores}")  # Instrução de impressão
         cores = self.strategia.get_last_colors()
         if len(cores) > 0:  # Verifica se cores não é uma lista vazia
             self.start_drawing_balls(cores)
@@ -102,6 +106,11 @@ class FaceGUI:
             y2 = y1 + 20
 
             self.canvas.create_oval(x1, y1, x2, y2, fill=colors[i])
+            
+    def continuous_update(self):
+        self.update_balls()
+        self.master.after(1000, self.continuous_update)  # Atualiza a cada segundo
+
 
     def calculate_profit(self):
         return (self.strategia.acertos - self.strategia.perdas) * self.strategia.valor_aposta

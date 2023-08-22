@@ -34,7 +34,6 @@ class Strat:
     
     def get_last_colors(self):
         cores = list(self.lista_cores)
-        print(f"Lista de cores em get_last_colors: {cores}")  # Instrução de impressão
         return cores
 
 
@@ -86,13 +85,15 @@ class Strat:
             self.pode_apostar = False
        
     def processar_cores(self, fila_dados_impressos):
+        
+        for item in fila_dados_impressos:
+            cor = item.split(",")[0].split(":")[1].strip()
+            self.lista_cores.append(cor)
+
         novas_cores = [item.split(",")[0].split(":")[1].strip() for item in fila_dados_impressos]
         for cor in novas_cores:
             if cor not in self.lista_cores:
                 self.lista_cores.append(cor)
-
-            print(f"fila_dados_impressos: {fila_dados_impressos}")
-            print(f"Lista de cores após processamento: {list(self.lista_cores)}")
 
         if list(self.lista_cores) != self.ultima_lista_cores:
             self.message_queue.put(f"Cores atuais: {list(self.lista_cores)}")
