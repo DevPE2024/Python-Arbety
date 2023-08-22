@@ -1,5 +1,7 @@
-import os
+import tkinter as tk
+import queue
 import time
+import threading
 from bs4 import BeautifulSoup
 from selenium.webdriver import Edge
 from selenium.webdriver.common.by import By
@@ -7,33 +9,37 @@ from selenium.webdriver.edge.options import Options
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
-from collections import deque
-from strat import Strat
-from face import FaceGUI
-import tkinter as tk
-import threading
 
-def start_robot(strategia):
-    # Configura as opções do Edge
-    options = Options()
-    options.add_argument("--headless")
-    service = Service(EdgeChromiumDriverManager().install())
-    driver = Edge(service=service, options=options)
-    
-    driver.implicitly_wait(10)
-    url = "https://www.arbety.com/games/double"
-    driver.get(url)
-    html_antigo = driver.page_source
-    TAMANHO_MAXIMO = 20
-    fila_dados_impressos = deque(maxlen=TAMANHO_MAXIMO)
-    
-    try:
+# Importando a classe Strat aqui para evitar importação cíclica
+from strat import Strat
+
+
+class App:
+    def __init__(self):
+        self.message_queue = queue.Queue()
+        self.strat_instance = Strat(self.message_queue)
+        self.face_instance = None
+
+        # Configura as opções do Edge
+        options = Options()
+        options.add_argument("--headless")
+
+        # Configura o serviço do EdgeDriver
+        self.driver = Edge(options=options)
+        self.driver.implicitly_wait(10)
+
+    def scrape_data(self):
+        url = "https://www.arbety.com/games/double"
+        self.driver.get(url)
+
+        # Armazena o código HTML atual da página
+        html_antigo = self.driver.page_source
+
         while True:
             try:
                 # Verifica se os elementos estão presentes na página
-                elemento_pai = WebDriverWait(driver, 10).until(
+                elemento_pai = WebDriverWait(self.driver, 15).until(
                     EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'items')]"))
                 )
 
@@ -62,39 +68,60 @@ def start_robot(strategia):
                         linha_dados = f"Cor: {cor}, Data: {data}, Hora: {hora}, Número: {numero}"
                         dados_atuais.append(linha_dados)
 
-                # Adiciona os novos dados à fila
-                fila_dados_impressos.extend(dados_atuais[-TAMANHO_MAXIMO:])
+                # Processa os dados usando a Strat
+                self.strat_instance.processar_cores(dados_atuais)
 
-                # Chama o método processar_cores para processar as cores e tomar decisões de apostas
-                strategia.processar_cores(fila_dados_impressos)
+                # Atualiza a interface gráfica
+                if self.face_instance:
+                    self.face_instance.update_labels()
 
                 # Armazena o código HTML atual da página
-                html_atual = driver.page_source
+                html_atual = self.driver.page_source
 
                 # Verifica se houve mudanças na página
                 if html_atual != html_antigo:
                     html_antigo = html_atual
-                    driver.refresh()
+                    self.driver.refresh()
 
                 # Espera por 15 segundos antes de verificar novamente
                 time.sleep(15)
 
             except NoSuchElementException as e:
                 print(e)
-                driver.quit()
+                self.driver.quit()
                 break
 
-    except KeyboardInterrupt:
-        print("Programa interrompido pelo usuário")
-        driver.quit()
+    def update_gui(self):
+        if self.face_instance:
+            self.face_instance.update_labels()
 
-def start_gui(strategia):
-    root = tk.Tk()
-    face_gui = FaceGUI(root, strategia)
-    root.mainloop()
+    def run(self):
+        root = tk.Tk()
+        # Importando FaceGUI localmente para evitar importação cíclica
+        from face import FaceGUI
+        self.face_instance = FaceGUI(root, self.strat_instance)
+        
+        # Usando threading para a raspagem
+        scrape_thread = threading.Thread(target=self.scrape_data)
+        scrape_thread.start()
+        
+        root.mainloop()
+        scrape_thread.join()  # Aguarda até que o thread seja finalizado
+
+        # Adicionando um método de atualização periódica
+        def periodic_update():
+            self.update_gui()
+            root.after(1000, periodic_update)
+
+        root.after(1000, periodic_update)
+        root.mainloop()
+
+        # Certificando-se de fechar o driver quando a GUI é fechada
+        self.driver.quit()
+
+        while not self.message_queue.empty():
+            print(self.message_queue.get())
 
 if __name__ == "__main__":
-    strategia = Strat()
-    robot_thread = threading.Thread(target=start_robot, args=(strategia,))
-    robot_thread.start()
-    start_gui(strategia)
+    app = App()
+    app.run()
