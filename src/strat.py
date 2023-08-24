@@ -14,7 +14,8 @@ class Strat:
 
     @property
     def lucro(self):
-        return self.valor_aposta - self.saldo_inicial
+        lucro = self.valor_aposta - self.saldo_inicial
+        return max(0, lucro)  # Para garantir que o lucro nunca seja negativo
 
     def acerto(self, cores):
         padroes = {
@@ -30,7 +31,7 @@ class Strat:
 
     def fazer_aposta(self, cor, valor_aposta_ui):
         if self.valor_aposta >= valor_aposta_ui:
-            self.valor_aposta -= valor_aposta_ui
+            # Removemos a diminuição da banca aqui, pois será gerenciada nos métodos ganho e perda.
             return f"Aposta de {valor_aposta_ui} reais feita na cor {cor}. Saldo atual: {self.valor_aposta}", cor, valor_aposta_ui
         else:
             return "Saldo insuficiente para fazer a aposta.", None, None
@@ -43,11 +44,13 @@ class Strat:
             ganho = valor_aposta_ui * 2
         elif cor_vencedora == 'white':
             ganho = valor_aposta_ui * 14
+        # A banca é aumentada quando o ganho é processado
         self.valor_aposta += ganho
         self.acertos += 1
         self.message_queue.put(f"WIN - Você Ganhou! Saldo: {self.valor_aposta}")
 
     def perda(self, valor_aposta_ui):
+        # A banca é diminuída quando a perda é processada
         self.valor_aposta -= valor_aposta_ui
         if self.valor_aposta < 0:
             self.valor_aposta = 0

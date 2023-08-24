@@ -60,10 +60,10 @@ class FaceGUI:
     def toggle_robot_status(self):
         self.robot_status = not self.robot_status
         self.robot_status_label.config(text="Robô Ligado" if self.robot_status else "Robô Desligado")
+         # No momento da ativação do robô, não atualizamos o valor da aposta diretamente. Apenas usamos o valor da UI quando necessário.
         if self.robot_status:
             valor_aposta = float(self.bet_value_entry.get())
-            if valor_aposta <= self.strategia.valor_aposta:
-                self.strategia.valor_aposta = valor_aposta  # Atualizando o valor da aposta na estratégia
+            if valor_aposta <= self.strategia.saldo_inicial:
                 print("Robô Ligado")
             else:
                 print("Valor da aposta é maior do que a banca disponível!")
@@ -108,7 +108,7 @@ class FaceGUI:
 
 
     def calculate_profit(self):
-        return (self.strategia.acertos - self.strategia.quantidade_perdas) * self.strategia.valor_aposta
+        return self.strategia.lucro  # Ajustado para refletir a lógica atualizada
 
 
     def update_labels(self):
