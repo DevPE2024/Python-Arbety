@@ -5,7 +5,7 @@ import queue
 class FaceGUI:
     def __init__(self, master, strategia):
         self.master = master
-        self.strategia = strategia  # Acessando a instância de Strat
+        self.strategia = strategia  
         master.title("Robô Arbety")
         master.geometry("700x550")
         master.configure(bg="#163340")
@@ -104,12 +104,11 @@ class FaceGUI:
             
     def continuous_update(self):
         self.update_balls()
-        self.master.after(1000, self.continuous_update)  # Atualiza a cada segundo
+        self.master.after(1000, self.continuous_update)  
 
 
     def calculate_profit(self):
-        return self.strategia.lucro  # Ajustado para refletir a lógica atualizada
-
+        return self.strategia.lucro  
 
     def update_labels(self):
         try:
