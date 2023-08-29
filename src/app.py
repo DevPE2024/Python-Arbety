@@ -69,7 +69,12 @@ class App:
                         dados_atuais.append(linha_dados)
 
                 # Processa os dados usando a Strat
-                valor_aposta_ui = float(self.face_instance.bet_value_entry.get())
+                valor = self.face_instance.bet_value_entry.get()
+                if valor:
+                    valor_aposta_ui = float(valor)
+                else:
+                    print("Valor da aposta não fornecido")
+
                 self.strat_instance.processar_cores(dados_atuais, valor_aposta_ui)
 
                 # Atualiza a interface gráfica
