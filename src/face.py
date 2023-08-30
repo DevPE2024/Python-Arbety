@@ -7,7 +7,7 @@ class FaceGUI:
         self.master = master
         self.strategia = strategia  
         master.title("Robô Arbety")
-        master.geometry("700x550")
+        master.geometry("600x500")
         master.configure(bg="#163340")
         self.continuous_update()
 
