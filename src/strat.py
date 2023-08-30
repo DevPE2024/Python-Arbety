@@ -184,8 +184,6 @@ class Strat:
             resultado_real = self.lista_cores[-1]
             self.aposta(cor_apostada, resultado_real, valor_aposta_ui)
 
-
-
     def realizar_aposta_pendente(self, valor_aposta_ui):
         # Realiza a aposta pendente com a cor analisada anteriormente e o resultado real
         resultado_real = self.lista_cores[-1]
