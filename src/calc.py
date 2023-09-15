@@ -62,7 +62,7 @@ class Calc:
             self.mean_cv_scores[name] = mean_cv_score
             logging.info(f"Precisão média durante a validação cruzada do {name}: {mean_cv_score * 100:.2f}%")
             
-            # Alterando o limite para 70%
+            # Alterando o limite para 80%
             if mean_cv_score > 0.7:
                 model.fit(X, y)
                 self.is_trained[name] = True
